@@ -71,6 +71,6 @@ class AFHTTPRequestOperation
   include AFMotion::Serialization
 end
 
-class AFHTTPRequestOperationManager
+class AFHTTPSessionManager
   include AFMotion::Serialization
 end

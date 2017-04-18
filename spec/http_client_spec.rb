@@ -1,6 +1,6 @@
 describe "AFMotion::ClientDSL" do
   before do
-    @client = AFHTTPRequestOperationManager.alloc.initWithBaseURL("http://url".to_url)
+    @client = AFHTTPSessionManager.alloc.initWithBaseURL("http://url".to_url)
     @dsl = AFMotion::ClientDSL.new(@client)
   end
 
@@ -76,9 +76,9 @@ end
 
 describe "AFMotion::Client" do
   describe ".build" do
-    it "should return an AFHTTPRequestOperationManager" do
+    it "should return an AFHTTPSessionManager" do
       client = AFMotion::Client.build("http://url")
-      client.is_a?(AFHTTPRequestOperationManager).should == true
+      client.is_a?(AFHTTPSessionManager).should == true
     end
   end
 
@@ -109,7 +109,7 @@ end
 
 describe "AFHTTPClient" do
   before do
-    @client = AFHTTPRequestOperationManager.alloc.initWithBaseURL("http://google.com/".to_url)
+    @client = AFHTTPSessionManager.alloc.initWithBaseURL("http://google.com/".to_url)
   end
 
   describe "URL Helpers" do
@@ -202,7 +202,7 @@ describe "AFHTTPClient" do
         image = UIImage.imageNamed("test")
         @data = UIImagePNGRepresentation(image)
         @file_added = false
-        @client = AFHTTPRequestOperationManager.alloc.initWithBaseURL("http://bing.com/".to_url)
+        @client = AFHTTPSessionManager.alloc.initWithBaseURL("http://bing.com/".to_url)
         @client.send(multipart_method, "", test: "Herp") do |result, form_data, progress|
           if form_data
             @file_added = true

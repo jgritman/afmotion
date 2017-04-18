@@ -18,7 +18,7 @@ module AFMotion
 
       attr_accessor :shared
 
-      # Returns an instance of AFHTTPRequestOperationManager
+      # Returns an instance of AFHTTPSessionManager
       def build(base_url, &block)
         dsl = AFMotion::SessionClientDSL.new(base_url)
         case block.arity

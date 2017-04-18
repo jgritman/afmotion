@@ -6,9 +6,9 @@ module AFMotion
     class << self
       attr_accessor :shared
 
-      # Returns an instance of AFHTTPRequestOperationManager
+      # Returns an instance of AFHTTPSessionManager
       def build(base_url, &block)
-        operation_manager = AFHTTPRequestOperationManager.alloc.initWithBaseURL(base_url.to_url)
+        operation_manager = AFHTTPSessionManager.alloc.initWithBaseURL(base_url.to_url)
         if block
           dsl = AFMotion::ClientDSL.new(operation_manager)
           case block.arity
@@ -111,7 +111,7 @@ module AFMotion
   end
 end
 
-class AFHTTPRequestOperationManager
+class AFHTTPSessionManager
   include AFMotion::ClientShared
 
   AFMotion::HTTP_METHODS.each do |method|
