@@ -48,20 +48,14 @@ module AFMotion
     end
 
     def create_multipart_operation(http_method, path, parameters = {}, &callback)
-      inner_callback = Proc.new do |result, form_data,  bytes_written_now,  total_bytes_written, total_bytes_expect|
+      inner_callback = Proc.new do |result, form_data, progress|
         case callback.arity
         when 1
           callback.call(result)
         when 2
           callback.call(result, form_data)
         when 3
-          progress = nil
-          if total_bytes_written && total_bytes_expect
-            progress = total_bytes_written.to_f / total_bytes_expect.to_f
-          end
           callback.call(result, form_data, progress)
-        when 5
-          callback.call(result, form_data, bytes_written_now, total_bytes_written, total_bytes_expect)
         end
       end
 
@@ -71,49 +65,64 @@ module AFMotion
           inner_callback.call(nil, formData)
         }
       end
-
       upload_callback = nil
       if callback.arity > 2
-        upload_callback = lambda { |bytes_written_now, total_bytes_written, total_bytes_expect|
-          inner_callback.call(nil, nil, bytes_written_now, total_bytes_written, total_bytes_expect)
-        }
+        upload_callback = lambda do |progress|
+          inner_callback.call(nil, nil, progress)
+        end
       end
 
       http_method = http_method.to_s.upcase
-      if http_method == "POST"
-        operation_or_task = self.POST(path,
-          parameters: parameters,
-          constructingBodyWithBlock: multipart_callback,
-          success: AFMotion::Operation.success_block_for_http_method(:post, inner_callback),
-          failure: AFMotion::Operation.failure_block(inner_callback))
-      else
-        operation_or_task = self.PUT(path,
-          parameters: parameters,
-          constructingBodyWithBlock: multipart_callback,
-          success: AFMotion::Operation.success_block_for_http_method(:post, inner_callback),
-          failure: AFMotion::Operation.failure_block(inner_callback))
+      url = NSURL.URLWithString(path, relativeToURL:self.baseURL).absoluteString
+      serialization_error_ptr = Pointer.new(:object)
+      request = requestSerializer.multipartFormRequestWithMethod(http_method,
+        URLString: url,
+        parameters: parameters,
+        constructingBodyWithBlock: multipart_callback,
+        error: serialization_error_ptr)
+
+      if serialization_error_ptr && serialization_error_ptr[0]
+        queue = self.completionQueue || Dispatch::Queue.main
+        queue.async { AFMotion::Operation.failure_block(inner_callback).call(nil, serialization_error_ptr[0]) }
+        return nil
       end
-      if upload_callback
-        if operation_or_task.is_a?(AFURLConnectionOperation)
-          operation_or_task.setUploadProgressBlock(upload_callback)
-        else
-          # using NSURLSession - messy, probably leaks
-          @observer = SessionObserver.new(operation_or_task, upload_callback)
-        end
-      end
-      operation_or_task
+
+      task = self.uploadTaskWithStreamedRequest(request,
+        progress: upload_callback,
+        completionHandler: lambda do |_response, response_object, error|
+          error ? AFMotion::Operation.failure_block(inner_callback).call(task, error) : AFMotion::Operation.success_block_for_http_method(:post, inner_callback).call(task, response_object)
+        end)
+      task.resume
+      task
     end
 
     def create_operation(http_method, path, parameters = {}, &callback)
-      method_signature = "#{http_method.upcase}:parameters:success:failure:"
-      method = self.method(method_signature)
       success_block = AFMotion::Operation.success_block_for_http_method(http_method, callback)
       failure_block = AFMotion::Operation.failure_block(callback)
-      operation = method.call(path, parameters, success_block, failure_block)
-      if parameters && parameters[:progress_block] && operation.respond_to?(:setDownloadProgressBlock)
-        operation.setDownloadProgressBlock(parameters.delete(:progress_block))
+      progress_block = parameters.delete(:progress_block) if parameters && parameters[:progress_block]
+
+      http_method = http_method.to_s.upcase
+      url = NSURL.URLWithString(path, relativeToURL:self.baseURL).absoluteString
+      serialization_error_ptr = Pointer.new(:object)
+      request = requestSerializer.requestWithMethod(http_method,
+        URLString: url,
+        parameters: parameters,
+        error: serialization_error_ptr)
+
+      if serialization_error_ptr && serialization_error_ptr[0]
+        queue = self.completionQueue || Dispatch::Queue.main
+        queue.async { failure_block.call(nil, serialization_error_ptr[0]) }
+        return nil
       end
-      operation
+
+      task = self.dataTaskWithRequest(request,
+        uploadProgress: nil,
+        downloadProgress: progress_block,
+        completionHandler: lambda do |_response, response_object, error|
+          error ? failure_block.call(task, error) : success_block.call(task, response_object)
+        end)
+      task.resume
+      task
     end
 
     alias_method :create_task, :create_operation
