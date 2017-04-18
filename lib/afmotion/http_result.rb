@@ -1,17 +1,16 @@
 module AFMotion
   class HTTPResult
-    attr_accessor :operation, :object, :error, :task
+    attr_accessor :object, :error, :task
 
-    def initialize(operation_or_task, responseObject, error)
-      if defined?(NSURLSessionTask) && operation_or_task.is_a?(NSURLSessionTask) ||
-        # cluser class ugh
-        operation_or_task.class.to_s.include?("Task")
-        self.task = operation_or_task
-      else
-        self.operation = operation_or_task
-      end
+    def initialize(task, responseObject, error)
+      self.task = task
       self.object = responseObject
       self.error = error
+    end
+
+    # alias_method doesn't seem to work here
+    def operation
+      task
     end
 
     def success?
@@ -23,21 +22,10 @@ module AFMotion
     end
 
     def status_code
-      if self.operation && self.operation.response
-        self.operation.response.statusCode
-      elsif self.task && self.task.response
+      if self.task && self.task.response
         self.task.response.statusCode
       else
         nil
-      end
-    end
-
-    def body
-      if task && task.currentRequest
-        raise "Cannot call result.body of a task"
-      end
-      if operation && operation.responseString
-        operation.responseString
       end
     end
   end

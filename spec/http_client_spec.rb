@@ -180,7 +180,7 @@ describe "AFHTTPClient" do
 
         wait_max(10) do
           @result.should.not == nil
-          @result.operation.request.valueForHTTPHeaderField("Content-Type").include?("multipart/form-data").should == true
+          @result.task.currentRequest.valueForHTTPHeaderField("Content-Type").include?("multipart/form-data").should == true
         end
       end
 
