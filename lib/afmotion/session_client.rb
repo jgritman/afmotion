@@ -133,7 +133,7 @@ class AFHTTPSessionManager
     success = options[:success]
     failure = options[:failure]
 
-    request = self.requestSerializer.multipartFormRequestWithMethod("PUT", URLString: NSURL.URLWithString(url_string, relativeToURL: self.baseURL).absoluteString, parameters:parameters, constructingBodyWithBlock:block)
+    request = self.requestSerializer.multipartFormRequestWithMethod("PUT", URLString: NSURL.URLWithString(url_string, relativeToURL: self.baseURL).absoluteString, parameters:parameters, constructingBodyWithBlock:block, error: options[:error])
 
     task = self.dataTaskWithRequest(request, completionHandler: ->(response, responseObject, error) {
       if error && failure

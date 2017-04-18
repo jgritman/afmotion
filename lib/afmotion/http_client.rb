@@ -127,7 +127,7 @@ class AFHTTPSessionManager
     block = options[:constructingBodyWithBlock]
     success = options[:success]
     failure = options[:failure]
-    request = self.requestSerializer.multipartFormRequestWithMethod("PUT", URLString: NSURL.URLWithString(url_string, relativeToURL:self.baseURL).absoluteString, parameters: parameters, constructingBodyWithBlock:block)
+    request = self.requestSerializer.multipartFormRequestWithMethod("PUT", URLString: NSURL.URLWithString(url_string, relativeToURL:self.baseURL).absoluteString, parameters: parameters, constructingBodyWithBlock:block, error: options[:error])
     operation = self.HTTPRequestOperationWithRequest(request, success:success, failure:failure)
     self.operationQueue.addOperation(operation)
 
