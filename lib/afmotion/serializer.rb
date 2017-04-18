@@ -33,7 +33,7 @@ class AFHTTPRequestSerializer
     elsif options[:username] && options[:password]
       setAuthorizationHeaderFieldWithUsername(options[:username], password: options[:password])
     elsif options[:token]
-      setAuthorizationHeaderFieldWithToken(options[:token])
+      setValue(NSString.stringWithFormat("Token token=\"%@\"", options[:token]), forHTTPHeaderField:"Authorization")
     else
       raise "Not a valid authorization hash: #{options.inspect}"
     end
